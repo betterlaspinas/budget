@@ -28,7 +28,7 @@ export default defineConfig({
         q: "Las Piñas City"
       }
     ],
-    districts: [],
+    districts: ["leg:las-pinas-city:lone"],
     exclude: [
       { key: "dpwh:house-reading:3616", reason: R }, // Slope Protection Works, Magdaong Creek
       { key: "dpwh:house-reading:4788", reason: R }, // Flood Control, Alabang Bayanan River
