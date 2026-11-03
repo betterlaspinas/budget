@@ -16,8 +16,10 @@ export default defineConfig({
   name: "Las Piñas City",
   shortName: "Las Piñas City",
   operator: {
-    name: "Better Las Piñas"
+    name: "Better Las Piñas",
+    url: "https://betterlaspinas.org"
   },
+  logo: "/brand/better-laspinas-logo.svg",
   scope: {
     offices: [],
     places: [
