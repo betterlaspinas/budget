@@ -22,7 +22,7 @@ import { shortNameOf } from '../config';
 import { count, php, phpDelta, phpFull, plural } from '../lib/format';
 import { splitOffice, type SplitPart } from '../lib/office-split';
 import { usePortal, type Async } from '../lib/portal-context';
-import type { QueryReport, ScopedProject } from '../lib/scope';
+import { summarise, type QueryReport, type ScopedProject } from '../lib/scope';
 import { Await, External } from './Bits';
 
 interface DistrictRow {
@@ -118,6 +118,8 @@ function Offices({ list, queries, projects }: { list: Envelope<DistrictCard>[]; 
         {offices.map((o) => <Office key={o.office.id} view={o} portalKeys={portalKeys} />)}
       </div>
 
+      <Elsewhere projects={projects} shown={new Set(offices.map((o) => o.printed))} />
+
       {noOffice.length > 0 && (
         <p className="fine">
           No DPWH district office is listed for {noOffice.map((c) => c.label).join('; ')}.
@@ -129,6 +131,53 @@ function Offices({ list, queries, projects }: { list: Envelope<DistrictCard>[]; 
         {credits.length > 0 && <> Portraits: {credits.join('; ')}.</>}
       </p>
     </>
+  );
+}
+
+/**
+ * The portal's projects that are on no card above: DPWH lines under an office
+ * with no card here (the Central Office, a regional office), and lines of the
+ * programs that name no DPWH office. Each office links to the list filtered to it.
+ */
+function Elsewhere({ projects, shown }: { projects: ScopedProject[]; shown: ReadonlySet<string> }) {
+  const { config } = usePortal();
+  const byOffice = new Map<string, ScopedProject[]>();
+  for (const p of projects) {
+    const key = p.office ?? '';
+    if (shown.has(key)) continue;
+    byOffice.set(key, [...(byOffice.get(key) ?? []), p]);
+  }
+  if (!byOffice.size) return null;
+  const all = [...byOffice.values()].flat();
+  const s = summarise(all);
+  const groups = [...byOffice.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  const more = plural(all.length, `more ${shortNameOf(config)} project`);
+  const are = all.length === 1 ? 'is' : 'are';
+  const amounts = <>{php(s.nep.rows ? s.nep.php : null)} in the NEP, {php(s.house.rows ? s.house.php : null)} in the House bill</>;
+  const where = (office: string) => (office ? `under the DPWH ${office}` : 'in programs that name no DPWH office');
+  const filter = (office: string) => `/?office=${encodeURIComponent(office)}#projects`;
+
+  if (groups.length === 1) {
+    const [office] = groups[0];
+    return (
+      <p className="oelsewhere">
+        {more} in this portal {are} {where(office)}, so {all.length === 1 ? 'it is' : 'they are'} on no office card above: {amounts}.
+        {office && <>{' '}<Link to={filter(office)}>See {all.length === 1 ? 'it' : 'them'} →</Link></>}
+      </p>
+    );
+  }
+  return (
+    <p className="oelsewhere">
+      {more} in this portal {are} on no office card above ({amounts}):{' '}
+      {groups.map(([office, rows], i) => (
+        <span key={office}>
+          {i > 0 && (i === groups.length - 1 ? ' and ' : ', ')}
+          {office ? <Link to={filter(office)}>{count(rows.length)} {where(office)}</Link> : <>{count(rows.length)} {where(office)}</>}
+        </span>
+      ))}
+      .
+    </p>
   );
 }
 

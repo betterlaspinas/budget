@@ -308,6 +308,7 @@
 .ogrid.one .ocard-districts ul { grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); }
 .ogrid:not(.one) .ocard-districts ul { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); }
 .ocard > p.small { margin: 0; color: var(--ink-2); }
+.oelsewhere { margin: 14px 0 0; max-width: 820px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); font-size: 14px; line-height: 1.5; }
 /* A shared office's lines, split by the place each title names. */
 .osplit { border-top: 1px solid var(--rule-soft); padding-top: 10px; display: grid; gap: 8px; }
 .osplit > .label { margin: 0; }
