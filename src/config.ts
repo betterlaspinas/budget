@@ -81,6 +81,14 @@ export interface PortalConfig {
     districts?: string[];
     /** Lines removed by hand. Published, with reasons, on the About page. */
     exclude?: Exclusion[];
+    /**
+     * Other places a shown office serves, for an office this portal holds only
+     * part of (a district's office shared with a neighbour). The office card
+     * splits the office's lines by the place each title names: this portal's
+     * own, one summary per place here, and the lines that name none of them.
+     * `q` as for `places`: every word must appear in the title.
+     */
+    alsoServed?: { label: string; q?: string }[];
   };
   /**
    * Citizen reports go to one central service on budget.bettergov.ph (not
@@ -114,6 +122,9 @@ export function configProblems(config: PortalConfig): string[] {
     for (const d of p.datasets ?? []) {
       if (!DATASET_KEYS.includes(d)) problems.push(`place "${p.label}": unknown program "${d}".`);
     }
+  }
+  for (const p of config.scope.alsoServed ?? []) {
+    if (!p.label.trim()) problems.push('an alsoServed place has an empty label.');
   }
   for (const d of districts) {
     if (!d.startsWith('leg:')) problems.push(`district "${d}" should be an id such as "leg:bohol:1st".`);

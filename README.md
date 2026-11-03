@@ -38,7 +38,7 @@ writes `portal.config.ts`. That file is the only one a fork needs to change.
 
 | Page | What is on it |
 | --- | --- |
-| **Projects** (`/`) | The headline figures; the DPWH offices in scope (`#offices`), each with its 2027 figures, tier and status counts, and under it the legislative districts it serves with their representatives (a shared office's money is shown once, never split); the six statuses; and every project with search, filters (program, status, DPWH office, reason), sorting and a CSV download. An office's line count or status opens the list filtered to it. Filters live in the URL, so a filtered list can be shared. |
+| **Projects** (`/`) | The headline figures; the DPWH offices in scope (`#offices`), each with its 2027 figures, tier and status counts, and under it the legislative districts it serves with their representatives (a shared office's money is shown once, whole; when the portal holds only part of an office, its lines are also split by the place each title names); the six statuses; and every project with search, filters (program, status, DPWH office, reason), sorting and a CSV download. An office's line count or status opens the list filtered to it. Filters live in the URL, so a filtered list can be shared. |
 | **Budgets 2020–2026** (`/gaa`) | The enacted budgets (GAA) for the same area: each DPWH office's whole budget by year, grouped by Congress, with the 2027 NEP and House bill beside it but apart; the yearly totals of the programs that name the place (click a year to filter); and every such program or project, in any department, with its amount in each year, search, department and year filters, and a CSV download. |
 | **A project** (`/projects/:program/:id`) | The amount in every version with a link to the exact PDF page, how the two versions were matched, notes on the line, and why it is in this portal. |
 | **About the data** (`/about`) | Every question the portal asks the API, for 2027 and for 2020–2026, with counts and a link to check each one, every line removed by hand and why, the source documents, plain-language rules and terms, and the notices. |
@@ -58,6 +58,8 @@ scope: {
   districts: ['leg:bohol:1st'],
   // Lines removed by hand. Each needs a reason; the About page publishes them.
   exclude: [],
+  // Optional: other places a shown office serves, summarised on its card.
+  alsoServed: [],
 }
 ```
 
@@ -75,6 +77,13 @@ scope: {
 - **Exclusions** are for namesakes: `<program>:<id>` for a 2027 line, `gaa:<family key>`
   for a 2020–2026 program (the key is in the CSV). `npm run check -- --verbose` lists the
   2027 lines found only by name under another office, which are the ones to review.
+- **Places also served** are for a district whose DPWH office is shared with a
+  neighbour you leave out (Las Piñas, whose office also serves Muntinlupa: list the
+  district, not the office). The office card keeps the office's whole figures and splits
+  its lines by the place each title names: this portal's lines in full, each `alsoServed`
+  place as one summary row with its lines behind a disclosure, and the lines that name no
+  single place (roads by name, the office's own line) listed but not assigned. `q`
+  matches as for places. The split is the portal's reading of titles, and the card says so.
 
 Examples for each kind are in [`examples/`](examples): a DEO, a highly urbanised city
 (Quezon City, whose offices are shared), and a municipality (Carmen, Bohol, a name used

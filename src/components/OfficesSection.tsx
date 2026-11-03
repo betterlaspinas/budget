@@ -8,12 +8,20 @@
  * Figures are the API's office figures (named projects, NEP against House
  * bill on the same ledger); lines whose two versions name different offices
  * are held out of them, as the API holds them out.
+ *
+ * An office this portal holds only part of (one shared with a neighbour) also
+ * gets its lines split by the place each title names, under the whole figures:
+ * this portal's own in full, each `alsoServed` place summarised, and the lines
+ * that name no single place listed. See lib/office-split.ts.
  */
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { DistrictCard, DistrictOffice, Envelope } from '../api/types';
+import type { DistrictCard, DistrictOffice, Envelope, ProjectRow } from '../api/types';
 import { BRIDGE_GROUPS } from '../api/types';
-import { count, php, phpDelta, plural } from '../lib/format';
-import { usePortal } from '../lib/portal-context';
+import { shortNameOf } from '../config';
+import { count, php, phpDelta, phpFull, plural } from '../lib/format';
+import { splitOffice, type SplitPart } from '../lib/office-split';
+import { usePortal, type Async } from '../lib/portal-context';
 import type { QueryReport, ScopedProject } from '../lib/scope';
 import { Await, External } from './Bits';
 
@@ -89,6 +97,7 @@ function Offices({ list, queries, projects }: { list: Envelope<DistrictCard>[]; 
   const { overview } = usePortal();
   const cards = list.map((e) => e.data);
   const { offices, noOffice } = buildOffices(cards, queries, projects);
+  const portalKeys = new Set(projects.map((p) => p.key));
   const districtCount = new Set(offices.flatMap((o) => o.districts.map((d) => d.id)).concat(noOffice.map((c) => c.id))).size;
   const note = list[0]?.meta.representatives_note as string | undefined;
   const residualTerm = overview.status === 'ready' ? overview.value.data.terms.residual : undefined;
@@ -101,12 +110,12 @@ function Offices({ list, queries, projects }: { list: Envelope<DistrictCard>[]; 
       </h2>
       <p className="section-lede">
         DPWH lists its money by the district engineering office that does the work. Each office serves one or more legislative
-        districts, and a shared office’s money is never split between them. Representatives shown hold the seat in the 20th
+        districts, and DPWH never splits a shared office’s money between them. Representatives shown hold the seat in the 20th
         Congress.{note && <> {note}</>}
       </p>
 
       <div className={`ogrid${offices.length === 1 ? ' one' : ''}`}>
-        {offices.map((o) => <Office key={o.office.id} view={o} />)}
+        {offices.map((o) => <Office key={o.office.id} view={o} portalKeys={portalKeys} />)}
       </div>
 
       {noOffice.length > 0 && (
@@ -123,7 +132,7 @@ function Offices({ list, queries, projects }: { list: Envelope<DistrictCard>[]; 
   );
 }
 
-function Office({ view }: { view: OfficeView }) {
+function Office({ view, portalKeys }: { view: OfficeView; portalKeys: ReadonlySet<string> }) {
   const { office, printed, query, lines, districts } = view;
   const f = office.fy2027;
   const wholeNep = office.years?.find((y) => y.fy === 2027 && y.stage === 'nep')?.php ?? null;
@@ -180,6 +189,10 @@ function Office({ view }: { view: OfficeView }) {
         <Link to={`/gaa#${office.id}`}>Its budget each year since 2020 →</Link>
       </p>
 
+      {!query && lines > 0 && (
+        <Split printed={printed} portalKeys={portalKeys} nep={f?.nep_php ?? null} house={f?.hgab3_php ?? null} portalLink={filter()} />
+      )}
+
       <div className="ocard-districts">
         <p className="label">
           {districts.length === 1 ? 'Legislative district it serves' : `${districts.length} legislative districts it serves`}
@@ -196,6 +209,138 @@ function Office({ view }: { view: OfficeView }) {
         </p>
       )}
     </article>
+  );
+}
+
+interface SplitProps {
+  printed: string;
+  portalKeys: ReadonlySet<string>;
+  /** The office figures above, to check the parts against. */
+  nep: number | null;
+  house: number | null;
+  /** The project list, narrowed to this office's lines in the portal. */
+  portalLink: string;
+}
+
+function Split({ printed, portalKeys, nep, house, portalLink }: SplitProps) {
+  const { client, config } = usePortal();
+  const [state, setState] = useState<Async<{ rows: ProjectRow[]; truncated: boolean }>>({ status: 'loading' });
+  useEffect(() => {
+    let live = true;
+    client.allProjects('dpwh', { office: printed }).then(
+      ({ rows, truncated }) => live && setState({ status: 'ready', value: { rows, truncated } }),
+      (error) => live && setState({ status: 'error', error: error instanceof Error ? error : new Error(String(error)) }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [client, printed]);
+
+  const api = client.href('/datasets/dpwh/projects', { office: printed });
+  if (state.status === 'loading') return <p className="ocard-note">Splitting this office’s lines by place…</p>;
+  if (state.status === 'error') {
+    return <p className="ocard-note">This office’s lines could not be loaded to split them by place: {state.error.message}. <External href={api}>The API request</External></p>;
+  }
+
+  const alsoServed = config.scope.alsoServed ?? [];
+  const name = shortNameOf(config);
+  const { parts, total } = splitOffice(state.value.rows, portalKeys, printed, name, alsoServed);
+  const unplacedLabel =
+    alsoServed.length === 1 ? `Names neither ${name} nor ${alsoServed[0].label}` : alsoServed.length ? 'Names none of these places' : `Does not name ${name}`;
+  const reconciled = total.nep.php === nep && total.house.php === house;
+
+  return (
+    <div className="osplit">
+      <p className="label">This office’s lines, by the place each title names</p>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Place</th>
+            <th scope="col" className="num">NEP</th>
+            <th scope="col" className="num">House bill</th>
+            <th scope="col" className="num">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          {parts.map((p) => (
+            <PartRow key={p.kind + p.label} part={p} label={p.kind === 'unplaced' ? unplacedLabel : p.label} portalLink={portalLink} />
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">
+              <span className="osplit-name">Whole office</span>
+              <span className="small muted">{plural(total.rows, 'line')}</span>
+            </th>
+            <Amounts nep={total.nep} house={total.house} />
+          </tr>
+        </tfoot>
+      </table>
+      <p className="ocard-note">
+        DPWH gives this money to the office, not to a city: this split is this portal’s reading of each project’s title.{' '}
+        {name}’s lines are the ones in this portal{alsoServed.length > 0 && <>; a line is counted for {alsoServed.map((p) => p.label).join(' or ')} when its title names it and no other place</>}.
+        Lines that name no single place, such as roads and bridges listed by road name or the office’s own line, are listed, not assigned.
+        NEP and House bill are compared, never added.{' '}
+        {reconciled ? (
+          <>The parts add up to the office figures above ({phpFull(nep)} NEP, {phpFull(house)} House bill).</>
+        ) : (
+          <>The lines listed under this office add up to {phpFull(total.nep.php)} NEP and {phpFull(total.house.php)} House bill, not the office figures above, which hold some lines out.</>
+        )}
+        {state.value.truncated && <> The API returned only part of this office’s lines, so the split is incomplete.</>}{' '}
+        <External href={api}>The API request</External>
+      </p>
+    </div>
+  );
+}
+
+function PartRow({ part, label, portalLink }: { part: SplitPart; label: string; portalLink: string }) {
+  const n = part.rows.length;
+  return (
+    <tr className={`osplit-${part.kind}`}>
+      <th scope="row">
+        <span className="osplit-name">
+          {label}
+          {part.kind === 'portal' && <span className="tag">In this portal</span>}
+        </span>
+        <span className="small">
+          {part.kind === 'portal' ? <Link to={portalLink}>{plural(n, 'line')} →</Link> : plural(n, 'line')}
+          {part.groups.length > 0 && (
+            <span className="muted">
+              {' · '}
+              {part.groups.map((g) => `${count(g.rows)} ${g.label.charAt(0).toLowerCase() + g.label.slice(1)}`).join(' · ')}
+            </span>
+          )}
+        </span>
+        {part.kind !== 'portal' && n > 0 && (
+          <details className="osplit-list">
+            <summary>{part.kind === 'place' ? `List the ${plural(n, 'line')}` : `Which ${n === 1 ? 'line' : `${count(n)} lines`}`}</summary>
+            <ul>
+              {part.rows.map((r) => (
+                <li key={r.id}>
+                  <External href={r.url}>{r.title}</External>
+                  <span className="small muted">
+                    NEP {php(r.nep_php)} · House bill {php(r.house_php)} · {r.group_label.charAt(0).toLowerCase() + r.group_label.slice(1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </th>
+      <Amounts nep={part.nep} house={part.house} />
+    </tr>
+  );
+}
+
+function Amounts({ nep, house }: Pick<SplitPart, 'nep' | 'house'>) {
+  const n = nep.rows ? nep.php : null;
+  const h = house.rows ? house.php : null;
+  return (
+    <>
+      <td className="num" data-label="NEP">{php(n)}</td>
+      <td className="num stat-accent" data-label="House bill">{php(h)}</td>
+      <td className="num" data-label="Change">{phpDelta((h ?? 0) - (n ?? 0))}</td>
+    </>
   );
 }
 

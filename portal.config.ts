@@ -29,6 +29,9 @@ export default defineConfig({
       }
     ],
     districts: ["leg:las-pinas-city:lone"],
+    // The Las Piñas Muntinlupa DEO also serves Muntinlupa: its office card
+    // summarises those lines instead of listing them in the portal.
+    alsoServed: [{ label: "Muntinlupa City", q: "Muntinlupa" }],
     exclude: [
       { key: "dpwh:house-reading:3616", reason: R }, // Slope Protection Works, Magdaong Creek
       { key: "dpwh:house-reading:4788", reason: R }, // Flood Control, Alabang Bayanan River
