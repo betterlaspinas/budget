@@ -162,14 +162,15 @@ function Elsewhere({ projects, shown }: { projects: ScopedProject[]; shown: Read
     const [office] = groups[0];
     return (
       <p className="oelsewhere">
-        {more} in this portal {are} {where(office)}, so {all.length === 1 ? 'it is' : 'they are'} on no office card above: {amounts}.
+        {more} in this portal {are} {where(office)}, not a district office shown here, so the figures above leave{' '}
+        {all.length === 1 ? 'it' : 'them'} out: {amounts}.
         {office && <>{' '}<Link to={filter(office)}>See {all.length === 1 ? 'it' : 'them'} →</Link></>}
       </p>
     );
   }
   return (
     <p className="oelsewhere">
-      {more} in this portal {are} on no office card above ({amounts}):{' '}
+      {more} in this portal {are} not under a district office shown here, so the figures above leave them out ({amounts}):{' '}
       {groups.map(([office, rows], i) => (
         <span key={office}>
           {i > 0 && (i === groups.length - 1 ? ' and ' : ', ')}
