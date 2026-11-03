@@ -73,7 +73,10 @@ scope: {
 - **The same place names** search the enacted budgets, 2020–2026: every department's
   programs, activities and projects whose name contains `q`. The GAA has no region, so
   `region` cannot narrow these; make `q` specific instead. DPWH offices' yearly totals
-  come with the offices.
+  come with the offices. The GAA text often loses the "ñ" ("Las Pi±as", "Las Pinas"):
+  list the place again under the same label with each spelling as `q` and
+  `datasets: []`, so only the enacted budgets search it. `npm run check` reconciles each
+  spelling on its own.
 - **Exclusions** are for namesakes: `<program>:<id>` for a 2027 line, `gaa:<family key>`
   for a 2020–2026 program (the key is in the CSV). `npm run check -- --verbose` lists the
   2027 lines found only by name under another office, which are the ones to review.

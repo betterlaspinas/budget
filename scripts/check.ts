@@ -98,7 +98,7 @@ async function main() {
     let checked = 0;
     for (const q of gaa.queries) {
       if (q.truncated) continue;
-      const mine = withExcluded.filter((r) => r.department_id === q.department_id && r.reasons.includes(q.place));
+      const mine = withExcluded.filter((r) => r.department_id === q.department_id && r.found.includes(q.q));
       for (const year of GAA_YEARS) {
         const theirs = (await api.json<GaaEnvelope<unknown[]>>(`/api/v1/gaa/departments/${q.department_id}/programs`, { q: q.q, limit: 1, year })).meta.matched_amount ?? 0;
         const ours = mine.reduce((a, r) => a + (r.years[String(year)]?.amount ?? 0), 0);

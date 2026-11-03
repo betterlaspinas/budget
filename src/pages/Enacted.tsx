@@ -49,7 +49,10 @@ export default function Enacted() {
     if (hash) document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: 'start' });
   }, [hash, districts.status]);
 
-  const placeList = places.map((p) => p.label).join(', ');
+  // One label can be searched under several spellings ("Las Piñas", "Las Pi±as"): name it once, list every search.
+  const placeList = [...new Set(places.map((p) => p.label))].join(', ');
+  const searches = [...new Set(places.map((p) => p.q ?? p.label))].map((q) => `“${q}”`);
+  const searchList = searches.length > 1 ? `${searches.slice(0, -1).join(', ')} or ${searches[searches.length - 1]}` : searches[0];
   return (
     <main className="page main">
       <PageHead
@@ -93,7 +96,7 @@ export default function Enacted() {
           <li>Amounts are the appropriations in each year’s GAA, in pesos. The GAA publishes them in thousands.</li>
           {places.length > 0 && (
             <>
-              <li>A program is listed when its name includes {placeList}. Names are matched, not places surveyed; a project whose name does not say where it is will not be here.</li>
+              <li>A program is listed when its name includes {searchList}. Names are matched, not places surveyed; a project whose name does not say where it is will not be here.</li>
               <li>One row is one name in one agency across the years. A renamed or re-scoped project shows as a new row. A dash means no appropriation under that name that year.</li>
             </>
           )}
