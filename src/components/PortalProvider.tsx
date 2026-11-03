@@ -26,7 +26,8 @@ function useSettled<T>(promise: Promise<T>): Async<T> {
 /**
  * The districts to show: every district an in-scope DPWH office serves (so an
  * office is always shown with all of its districts), plus any the config names
- * (a place-only portal, such as a municipality, names its own).
+ * (a place-only portal, such as a municipality, names its own). The other
+ * districts of a named district's office are added once its card is in.
  */
 function districtIds(scope: ScopeResult, configured: string[]): string[] {
   const ids = new Set(configured);
@@ -46,7 +47,18 @@ export default function PortalProvider({ children }: { children: ReactNode }) {
       attempt,
       overview: client.overview(),
       scope,
-      districts: scope.then((s) => Promise.all(districtIds(s, config.scope.districts ?? []).map((id) => client.district(id)))),
+      districts: scope.then(async (s) => {
+        const cards = await Promise.all(districtIds(s, config.scope.districts ?? []).map((id) => client.district(id)));
+        // A named district's office may serve others the portal leaves out
+        // (Las Piñas's also serves Muntinlupa): fetch those too, so the office
+        // is shown with all of its districts and their representatives. They
+        // keep only offices already shown, so a neighbour's other offices stay off.
+        const have = new Set(cards.map((c) => c.data.id));
+        const offices = new Set(cards.flatMap((c) => c.data.offices.map((o) => o.id)));
+        const more = [...new Set(cards.flatMap((c) => c.data.offices.flatMap((o) => o.district_ids)))].filter((id) => !have.has(id));
+        const extra = await Promise.all(more.map((id) => client.district(id)));
+        return [...cards, ...extra.map((e) => ({ ...e, data: { ...e.data, offices: e.data.offices.filter((o) => offices.has(o.id)) } }))];
+      }),
     };
   }, [client, config, attempt]);
 
