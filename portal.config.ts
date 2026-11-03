@@ -13,11 +13,13 @@ const R = 'Located in Muntinlupa City, not Las Piñas. Listed only because its D
 export default defineConfig({
   id: "las-pinas-city",
   kind: "city",
-  name: "Las Piñas City",
+  name: "BetterLasPiñas Budget Transparency Portal",
   shortName: "Las Piñas City",
   operator: {
-    name: "Better Las Piñas"
+    name: "Better Las Piñas",
+    url: "https://betterlaspinas.org"
   },
+  logo: "/brand/better-laspinas-logo.svg",
   scope: {
     offices: [],
     places: [

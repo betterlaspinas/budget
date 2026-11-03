@@ -105,7 +105,9 @@ export function Footer() {
             <span>
               {shortNameOf(config)}, run by{' '}
               {config.operator.url ? (
-                <a href={config.operator.url} target="_blank" rel="noopener">{config.operator.name}</a>
+                <a href={config.operator.url} target="_blank" rel="noopener" title={config.operator.name}>
+                  {config.operator.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')} ↗
+                </a>
               ) : (
                 config.operator.name
               )}
