@@ -26,7 +26,15 @@ export default defineConfig({
       {
         label: "Las Piñas City",
         q: "Las Piñas City"
-      }
+      },
+      // Titles that say "City of Las Piñas" or just "Las Piñas". Not for the
+      // 2027 DPWH list: "Las Piñas" matches the Las Piñas Muntinlupa DEO's
+      // name, which would bring in every Muntinlupa line.
+      { label: "Las Piñas", q: "Las Piñas", datasets: ["fmr", "hfep", "nia"] },
+      // The 2020–2026 GAA text spells it "Las Pi±as" (a garbled ñ) or
+      // "Las Pinas" in most DPWH lines; no 2027 list does.
+      { label: "Las Piñas", q: "Las Pi±as", datasets: [] },
+      { label: "Las Piñas", q: "Las Pinas", datasets: [] }
     ],
     districts: ["leg:las-pinas-city:lone"],
     // The Las Piñas Muntinlupa DEO also serves Muntinlupa: its office card
@@ -58,6 +66,22 @@ export default defineConfig({
       { key: "dpwh:house-reading:10654", reason: R }, // Social Services Building, Barangay Alabang
       { key: "dpwh:house-reading:10655", reason: R }, // Social Services Building, Bayanan Old Plaza
       { key: "dpwh:house-reading:10656", reason: R }, // Multi-Purpose Building, Barangay Sucat
+      {
+        key: "gaa:18-001|construction of materials laboratory facility las pias  muntinlupa deo muntinlupa city",
+        reason: "Located in Muntinlupa City, not Las Piñas. Its name mentions Las Piñas only as part of the Las Piñas - Muntinlupa DEO's name.",
+      },
+      {
+        key: "gaa:18-001|construction of dpwh las pias muntinlupa deo motorpool at victoria homes subdivision tunasan muntinlupa city",
+        reason: "Located in Tunasan, Muntinlupa City, not Las Piñas. Its name mentions Las Piñas only as part of the Las Piñas - Muntinlupa DEO's name.",
+      },
+      {
+        key: "gaa:18-001|construction of las pias muntinlupa district engineering office motorpool victoria homes subdivision tunasan muntinlupa city",
+        reason: "Located in Tunasan, Muntinlupa City, not Las Piñas. Its name mentions Las Piñas only as part of the Las Piñas Muntinlupa DEO's name.",
+      },
+      {
+        key: "gaa:18-001|construction concreting of partida road boundaries of barangay las pinas and sinasajan pearanda nueva ecija",
+        reason: "In Peñaranda, Nueva Ecija. Barangay Las Pinas there is a namesake of the city.",
+      },
     ]
   },
   reporting: {

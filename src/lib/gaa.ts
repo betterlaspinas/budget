@@ -29,6 +29,8 @@ export interface GaaRow extends GaaProgram {
   department: string;
   /** The place labels whose search found it. */
   reasons: string[];
+  /** The searches (`q`) that found it: one label can have several spellings. */
+  found: string[];
 }
 
 export interface GaaQuery {
@@ -114,8 +116,12 @@ export async function resolveGaa(client: Client, config: PortalConfig, onProgres
     for (const r of rows) {
       const key = gaaKey(r.fam_key);
       const seen = byKey.get(key);
-      if (!seen) byKey.set(key, { ...r, key, department: j.department.description, reasons: [j.place] });
-      else if (!seen.reasons.includes(j.place)) seen.reasons.push(j.place);
+      if (!seen) {
+        byKey.set(key, { ...r, key, department: j.department.description, reasons: [j.place], found: [j.q] });
+        continue;
+      }
+      if (!seen.reasons.includes(j.place)) seen.reasons.push(j.place);
+      if (!seen.found.includes(j.q)) seen.found.push(j.q);
     }
   });
 
